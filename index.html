@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Сертификаты 2026 — сводка</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- Ключ JS API Яндекс.Карт. Второй выданный ключ (9afe41bb-baef-4e4a-91a9-115cbafbcb37)
+     нужен для геокодера; здесь он не используется — координаты округов зашиты в файл. -->
+<script src="https://api-maps.yandex.ru/2.1/?apikey=2e3ed939-c634-493c-8f57-7bb2075986b1&lang=ru_RU"></script>
+<style>
+:root{
+  --bg:#eceee9;
+  --surface:#ffffff;
+  --surface-2:#f6f7f4;
+  --ink:#0f1317;
+  --ink-2:#454c55;
+  --muted:#767d87;
+  --hair:rgba(15,19,23,.12);
+  --hair-soft:rgba(15,19,23,.07);
+  --track:rgba(15,19,23,.08);
+  --c-agr:#0e7361;
+  --c-cert:#1b4d8f;
+  --c-buy:#a96a15;
+  --c-ten:#4a5a6e;
+  --c-own:#6c4a86;
+  --focus:#1b4d8f;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:'IBM Plex Sans',system-ui,-apple-system,Segoe UI,sans-serif;
+  font-size:14px;line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  font-variant-numeric:tabular-nums;
+}
+.num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:none;text-align:left}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+
+.ctrl{
+  border:1px solid var(--hair);background:var(--surface);
+  border-radius:8px;padding:8px 14px;font-size:13px;font-weight:500;
+  transition:border-color .15s,background .15s;
+}
+.ctrl:hover{border-color:var(--ink-2)}
+.ctrl[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+#tools{position:fixed;top:14px;left:14px;z-index:30;display:flex;gap:8px}
+#tabs{position:fixed;top:14px;right:14px;z-index:30;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+#to-top{position:fixed;right:18px;bottom:18px;z-index:30;width:44px;height:44px;padding:0;
+  border-radius:50%;font-size:18px;line-height:1;box-shadow:0 6px 18px rgba(15,19,23,.14)}
+[hidden]{display:none!important}
+#view-main,#view-cert{display:flex;flex-direction:column;gap:24px}
+#view-cert{padding-top:40px}
+.row-lead.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.row-lead.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+#view-out,#view-in,#view-stay,#view-mig{padding-top:40px;display:flex;flex-direction:column;gap:24px}
+.addr-item{width:100%;display:grid;grid-template-columns:26px minmax(140px,1fr) minmax(140px,1fr) 86px 34px;
+  align-items:start;gap:12px;padding:10px 12px;border-radius:9px}
+.addr-item:nth-child(odd){background:var(--surface-2)}
+.addr-item{color:inherit;text-align:left;border:none;font:inherit;transition:background .15s,box-shadow .15s}
+.addr-item[role="button"]{cursor:pointer}
+.addr-item[role="button"]:hover{background:var(--track)}
+.addr-item[aria-pressed="true"]{box-shadow:0 0 0 1.5px var(--tone) inset}
+.addr-okrug{display:block;font-size:10.5px;color:var(--muted);font-weight:500;margin-bottom:2px}
+.addr-txt{font-size:12.5px;line-height:1.35;overflow-wrap:anywhere}
+.addr-from{font-weight:500}
+.addr-to{color:var(--ink-2)}
+.addr-area{font-size:12px;color:var(--ink-2);text-align:right;padding-top:12px}
+@media(max-width:640px){.addr-item{grid-template-columns:20px 1fr 1fr 64px 30px;gap:8px}}
+.addr-ya{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin-top:8px;
+  border:1px solid var(--hair);border-radius:8px;background:var(--surface);text-decoration:none;
+  font-size:13px;font-weight:700;color:#e00;line-height:1;transition:border-color .15s,background .15s}
+.addr-ya:hover{border-color:#e00;background:rgba(224,0,0,.06)}
+#o-map,#i-map,#s-map,#m-map{height:560px;border-radius:0 0 14px 14px;overflow:hidden}
+@media(max-width:640px){#o-map,#i-map,#s-map,#m-map{height:380px}}
+.panel-open{font:inherit;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px;
+  border:none;background:none;cursor:pointer;padding:0}
+.panel-open .arrow{font-size:12px;color:var(--muted)}
+.panel-open:hover .arrow{color:var(--ink)}
+.row-lists.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+#c-mig .item{grid-template-columns:20px minmax(150px,2.4fr) minmax(20px,.8fr) 40px 74px;gap:8px}
+#c-mig .item-name{font-size:12.5px}
+
+main{padding:16px 28px 32px;display:flex;flex-direction:column;gap:24px;max-width:1720px}
+.row-lead{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.row-lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+
+/* ── сроки программы ───────────────────────────────── */
+.plan{display:flex;flex-direction:column;align-items:center;gap:18px}
+.plan-title{font-size:22px;font-weight:700;letter-spacing:.01em;text-align:center;text-transform:uppercase}
+.plan-track{width:100%;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;position:relative}
+.plan-track::before{content:"";position:absolute;left:10%;right:10%;top:7px;height:1px;background:var(--hair)}
+.stage{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;position:relative}
+.stage-dot{width:15px;height:15px;border-radius:50%;background:var(--bg);border:2px solid var(--tone);
+  box-shadow:0 0 0 4px var(--bg)}
+.stage-card{width:100%;background:var(--surface);border:1px solid var(--hair);border-radius:12px;
+  padding:12px 12px 13px;display:flex;flex-direction:column;gap:6px;align-items:center}
+.stage-name{font-size:11.5px;color:var(--muted);font-weight:500;line-height:1.3}
+.stage-date{font-size:17px;font-weight:600;letter-spacing:-.02em}
+.stage-date .lead{font-size:12px;color:var(--muted);font-weight:500;margin-right:4px}
+.stage-was{font:inherit;color:inherit;text-decoration:line-through;margin-right:8px}
+
+/* ── плитки ────────────────────────────────────────── */
+.tile{
+  width:100%;background:var(--surface);border:1px solid var(--hair);border-radius:14px;
+  padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px;
+  position:relative;overflow:hidden;transition:border-color .15s,box-shadow .15s;
+}
+.tile::before{content:"";position:absolute;inset:0 auto auto 0;width:100%;height:3px;background:var(--tone)}
+.tile:hover{border-color:var(--tone)}
+.tile[aria-pressed="true"]{border-color:var(--tone);box-shadow:0 0 0 2px var(--tone) inset}
+.tile-head{display:flex;align-items:flex-start;gap:12px}
+.tile-name{font-size:13px;font-weight:600;letter-spacing:-.005em;flex:1}
+.ring{flex:none}
+.ring text{font-size:11px;font-weight:600;fill:var(--ink);font-family:inherit}
+.tile-figs{display:flex;align-items:baseline;gap:10px}
+.fig{font-size:34px;font-weight:600;letter-spacing:-.03em;line-height:1}
+.fig-unit{font-size:13px;color:var(--muted);font-weight:500}
+.tile-area{font-size:14px;color:var(--ink-2);font-weight:500;display:flex;justify-content:space-between;gap:8px;
+  border-top:1px solid var(--hair-soft);padding-top:10px}
+.tile-area span:first-child{color:var(--muted);font-size:12px;font-weight:400;align-self:center}
+
+/* ── панели со списками ────────────────────────────── */
+.panel{background:var(--surface);border:1px solid var(--hair);border-radius:14px;display:flex;flex-direction:column;min-height:0}
+.panel-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px 14px;border-bottom:1px solid var(--hair-soft)}
+.panel-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel-cnt{font-size:15px;font-weight:700;color:var(--tone);margin-left:4px;font-variant-numeric:tabular-nums}
+.panel-area{font-size:12px;font-weight:600;color:var(--ink-2);margin-left:6px;font-variant-numeric:tabular-nums}
+.swatch{width:9px;height:9px;border-radius:2px;background:var(--tone);flex:none}
+.sortgroup{display:flex;gap:6px}
+.sortgroup .ctrl{padding:5px 10px;font-size:12px;border-radius:7px}
+.scroll{overflow-y:auto;max-height:420px;padding:8px 8px 12px}
+.scroll::-webkit-scrollbar{width:8px}
+.scroll::-webkit-scrollbar-thumb{background:var(--track);border-radius:99px}
+.item{width:100%;display:grid;grid-template-columns:22px minmax(96px,1.1fr) minmax(60px,2fr) 52px 84px;
+  align-items:center;gap:10px;padding:9px 10px;border-radius:9px;transition:background .15s,box-shadow .15s}
+.item:nth-child(odd){background:var(--surface-2)}
+.item:hover{background:var(--track)}
+.item[aria-pressed="true"]{box-shadow:0 0 0 1.5px var(--tone) inset}
+.item-rank{font-size:11px;color:var(--muted);text-align:right}
+.item-name{font-size:13px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:8px;border-radius:99px;background:var(--track);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:99px;background:var(--tone);width:0;transition:width .4s ease}
+.item-cnt{font-size:14px;font-weight:600;text-align:right}
+".item-area{font-size:12px;color:var(--ink-2);text-align:right}
+.empty{padding:28px 16px;color:var(--muted);font-size:13px}
+
+/* ── фильтры под второй строкой ────────────────────── */
+.filters{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--surface);border:1px solid var(--hair);border-radius:14px;padding:14px 18px}
+.filters label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.filters input[type="search"]{
+  font:inherit;font-size:13px;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--hair);border-radius:8px;padding:8px 12px;min-width:260px}
+.filters input[type="search"]::placeholder{color:var(--muted)}
+.filters select{
+  font:inherit;font-size:13px;font-weight:500;color:var(--ink);background:var(--surface-2);
+  border:1px solid var(--hair);border-radius:8px;padding:8px 12px;max-width:260px;cursor:pointer}
+
+.notice{background:var(--surface);border:1px solid var(--hair);border-radius:14px;padding:22px;font-size:13px;color:var(--ink-2);line-height:1.6}
+.notice h2{font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px}
+.notice ol{margin:8px 0 14px 18px}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:1180px){
+  .row-lead,.row-lead.four,.row-lead.three{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .row-lists,.row-lists.three{grid-template-columns:1fr}
+}
+@media (max-width:900px){
+  .plan-track{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .plan-track::before{display:none}
+  .stage-dot{display:none}
+  .plan-title{font-size:18px}
+}
+@media (max-width:640px){
+  main{padding:56px 14px 24px;gap:16px}
+  .row-lead,.row-lead.four,.row-lead.three{grid-template-columns:1fr}
+  .fig{font-size:30px}
+  .item{grid-template-columns:20px minmax(80px,1fr) 46px 76px;gap:8px}
+  .item .bar{display:none}
+}
+</style>
+</head>
+<body>
+
+<div id="tools">
+  <button class="ctrl" id="reset" type="button">Сбросить</button>
+  <button class="ctrl" id="reload" type="button">Обновить</button>
+</div>
+
+<div id="tabs">
+  <button class="ctrl" id="nav-mig" type="button" aria-pressed="false">Миграция</button>
+  <button class="ctrl" id="tab-btn" type="button">Сертификаты</button>
+  <button class="ctrl" id="nav-out" type="button" aria-pressed="false">Уехали</button>
+  <button class="ctrl" id="nav-in" type="button" aria-pressed="false">Приняли</button>
+  <button class="ctrl" id="nav-stay" type="button" aria-pressed="false">Остались</button>
+</div>
+<button class="ctrl" id="to-top" type="button" hidden aria-label="Наверх" title="Наверх">↑</button>
+
+<main>
+<div id="view-main">
+  <section class="plan" aria-label="Сроки выдачи сертификатов 2026">
+    <div class="plan-title">Выдача сертификатов 2026</div>
+    <div class="plan-track">
+      <div class="stage" style="--tone:var(--c-agr)"><span class="stage-dot"></span>
+        <div class="stage-card"><span class="stage-name">Начало приема заявлений</span>
+        <span class="stage-date">31.03.2026</span></div></div>
+      <div class="stage" style="--tone:var(--c-agr)"><span class="stage-dot"></span>
+        <div class="stage-card"><span class="stage-name">Завершение приема заявлений</span>
+        <span class="stage-date"><span class="stage-was">01.07.2026</span>04.06.2026</span></div></div>
+      <div class="stage" style="--tone:var(--c-cert)"><span class="stage-dot"></span>
+        <div class="stage-card"><span class="stage-name">Заключение соглашений</span>
+        <span class="stage-date"><span class="lead">до</span>03.08.2026</span></div></div>
+      <div class="stage" style="--tone:var(--c-buy)"><span class="stage-dot"></span>
+        <div class="stage-card"><span class="stage-name">Заключение ДКП/ДДУ</span>
+        <span class="stage-date"><span class="lead">до</span>31.12.2026</span></div></div>
+      <div class="stage" style="--tone:var(--c-own)"><span class="stage-dot"></span>
+        <div class="stage-card"><span class="stage-name">Оплата</span>
+        <span class="stage-date"><span class="lead">до</span>31.03.2027</span></div></div>
+    </div>
+  </section>
+
+  <section class="row-lead" id="row-lead" aria-label="Ключевые показатели"></section>
+  <section class="filters" id="filters" aria-label="Фильтры"></section>
+  <section class="row-lists" id="row-lists" aria-label="Разрезы по округам"></section>
+</div>
+
+<div id="view-mig" hidden>
+  <section class="row-lead" id="m-lead" aria-label="Показатели миграции"></section>
+  <section class="filters" id="m-filters" aria-label="Фильтры"></section>
+  <section class="panel" style="--tone:var(--c-buy)">
+    <div class="panel-head"><div class="panel-title"><span class="swatch"></span>Карта миграции</div>
+      <span id="m-map-note" style="margin-left:auto;font-size:12px;color:var(--muted)"></span></div>
+    <div id="m-map"></div>
+  </section>
+</div>
+
+<div id="view-out" hidden>
+  <section class="row-lead three" id="o-lead" aria-label="Показатели по уехавшим"></section>
+  <section class="filters" id="o-filters" aria-label="Фильтры"></section>
+  <section class="row-lists" id="o-lists" aria-label="Откуда и куда уехали"></section>
+  <section class="panel" id="o-addr" style="--tone:var(--c-buy)"></section>
+  <section class="panel" style="--tone:var(--c-buy)">
+    <div class="panel-head"><div class="panel-title"><span class="swatch"></span>Карта миграции</div>
+      <span id="o-map-note" style="margin-left:auto;font-size:12px;color:var(--muted)"></span></div>
+    <div id="o-map"></div>
+  </section>
+</div>
+
+<div id="view-in" hidden>
+  <section class="row-lead three" id="i-lead" aria-label="Показатели по принятым"></section>
+  <section class="filters" id="i-filters" aria-label="Фильтры"></section>
+  <section class="row-lists" id="i-lists" aria-label="Куда приехали и откуда"></section>
+  <section class="panel" id="i-addr" style="--tone:var(--c-cert)"></section>
+  <section class="panel" style="--tone:var(--c-cert)">
+    <div class="panel-head"><div class="panel-title"><span class="swatch"></span>Карта миграции</div>
+      <span id="i-map-note" style="margin-left:auto;font-size:12px;color:var(--muted)"></span></div>
+    <div id="i-map"></div>
+  </section>
+</div>
+
+<div id="view-stay" hidden>
+  <section class="row-lead three" id="s-lead" aria-label="Показатели по оставшимся"></section>
+  <section class="filters" id="s-filters" aria-label="Фильтры"></section>
+  <section class="panel" id="s-list" style="--tone:var(--c-own)"></section>
+  <section class="panel" id="s-addr" style="--tone:var(--c-own)"></section>
+  <section class="panel" style="--tone:var(--c-own)">
+    <div class="panel-head"><div class="panel-title"><span class="swatch"></span>Карта · остались в своём округе</div>
+      <span id="s-map-note" style="margin-left:auto;font-size:12px;color:var(--muted)"></span></div>
+    <div id="s-map"></div>
+  </section>
+</div>
+
+<div id="view-cert" hidden>
+  <section class="row-lead four" id="c-lead" aria-label="Показатели по сертификатам"></section>
+  <section class="filters" id="c-filters" aria-label="Фильтры"></section>
+  <section class="row-lists" id="c-lists" aria-label="Округа и ДКП/ДДУ"></section>
+  <section class="row-lists three" id="c-mig" aria-label="Миграция"></section>
+</div>
+
+  <div id="notice"></div>
+</main>
+
+<script>
+(function(){
+"use strict";
+
+/* ═══ 1. Источник данных ══════════════════════════════════════════════
+   Вкладка «Итог». D — Г.О/М.О, H — площадь, L — собственник/наниматель,
+   M — сертификат/выкуп, O — решение, P — подписано ли соглашение.     */
+var SHEET_ID = '1hyGpt3-zK0NVnjuQpZ-wXfu8CZdXS-n2pzcgao85RPU';
+var GID      = '1631641481';
+var COL = { okrug:3, addr:5, area:7, tenure:11, type:12, decision:14, agreement:15,
+            newOkrug:22, newAddr:23, contract:26 };
+
+function sources(){
+  var t = Date.now();
+  var csv  = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/export?format=csv&gid='+GID+'&_='+t;
+  var gviz = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?tqx=out:csv&headers=0&gid='+GID+'&_='+t;
+  return {
+    direct: [gviz, csv],                       // прямые каналы Google — им доверяем
+    proxy: [                                   // резерв: включается, только если прямые молчат
+      'https://api.allorigins.win/raw?url='+encodeURIComponent(csv),
+      'https://api.codetabs.com/v1/proxy/?quest='+encodeURIComponent(csv),
+      'https://corsproxy.io/?url='+encodeURIComponent(csv)
+    ]
+  };
+}
+
+/* ═══ 2. Нормализация ════════════════════════════════════════════════ */
+function norm(v){ return String(v==null?'':v).replace(/\u00a0/g,' ').replace(/ё/gi,'е').trim().toLowerCase(); }
+function num(v){
+  var s = String(v==null?'':v).replace(/\u00a0/g,'').replace(/\s/g,'');
+  if(!s) return 0;
+  if(s.indexOf(',')>-1 && s.indexOf('.')>-1) s = s.replace(/,/g,'');
+  else if(s.indexOf(',')>-1) s = s.replace(',','.');
+  s = s.replace(/[^0-9.\-]/g,'');
+  var x = parseFloat(s);
+  return isFinite(x) ? x : 0;
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+function okrugName(r){ return String(r[COL.okrug]||'').replace(/\s+/g,' ').trim(); }
+
+var fmtInt  = new Intl.NumberFormat('ru-RU');
+var fmtArea = new Intl.NumberFormat('ru-RU',{minimumFractionDigits:1,maximumFractionDigits:1});
+
+/* ═══ 3. Правила ═════════════════════════════════════════════════════ */
+function isPositive(r){ return norm(r[COL.decision]).indexOf('положительн') >= 0; }
+function isBlankDecision(r){
+  return String(r[COL.decision]==null?'':r[COL.decision]).replace(/[\s\u00a0\u200b\u2028\u2029]/g,'') === '';
+}
+function signed(r){ return norm(r[COL.agreement]) === 'да'; }
+function isAgreement(r){ return signed(r) && (isPositive(r) || isBlankDecision(r)); }
+
+function isCert(r){ var s=norm(r[COL.type]); return s.indexOf('сертификат')>=0 && s.indexOf('не подавал')<0; }
+function isBuyout(r){ var s=norm(r[COL.type]); return s.indexOf('выкуп')>=0 && s.indexOf('не подавал')<0; }
+function isTenant(r){ return norm(r[COL.tenure]).indexOf('нанимател')>=0; }
+function isOwner(r){ return norm(r[COL.tenure]).indexOf('собственник')>=0; }
+function always(){ return true; }
+
+var METRICS = [
+  { key:'agr',  name:'Соглашения',   tone:'var(--c-agr)',  test:always },
+  { key:'cert', name:'Сертификаты',  tone:'var(--c-cert)', test:isCert },
+  { key:'buy',  name:'Выкупы',       tone:'var(--c-buy)',  test:isBuyout },
+  { key:'ten',  name:'Наниматели',   tone:'var(--c-ten)',  test:isTenant },
+  { key:'own',  name:'Собственники', tone:'var(--c-own)',  test:isOwner }
+];
+function metricByKey(k){
+  for(var i=0;i<METRICS.length;i++) if(METRICS[i].key===k) return METRICS[i];
+  return null;
+}
+
+/* ═══ 4. Состояние ═══════════════════════════════════════════════════ */
+var rows = [], base = [], view = [];
+var state = { deal:null, tenure:null, okrug:null };
+var sortMode = { cert:'cnt', buy:'cnt', dkp:'cnt' };
+var tab = 'main', certSort = 'cnt', dkpSort = 'cnt';
+var certTenure = null, certOkrug = null, certDkp = false;
+var outOkrug = null, outTo = null, outTenure = null;
+var inOkrug = null, inFrom = null, inTenure = null;
+var stayOkrug = null, stayTenure = null;
+var migOkrug = null, migFlow = null, migTenure = null;
+var addrSel = { out:null, 'in':null, stay:null };
+var query = { out:'', 'in':'', stay:'' };
+var refreshAddr = { out:null, 'in':null, stay:null };
+function rowMatches(r, q){
+  if(!q) return true;
+  var hay = norm(okrugName(r) + ' ' + (r[COL.addr]||'') + ' ' +
+                 (resolveOkrug(r[COL.newOkrug])||'') + ' ' + (r[COL.newAddr]||''));
+  return hay.indexOf(q) >= 0;
+}
+function applyQuery(rowsIn, q){
+  q = norm(q);
+  return q ? rowsIn.filter(function(r){ return rowMatches(r, q); }) : rowsIn;
+}
+var panoSel = { out:'', 'in':'', stay:'' };
+
+function buildBase(){ base = rows.filter(isAgreement); }
+function metricFor(key){ var m = metricByKey(key); return m ? m.test : null; }
+function passFilters(r, skip){
+  if(state.deal && skip !== 'deal'){ var d = metricFor(state.deal); if(d && !d(r)) return false; }
+  if(state.tenure && skip !== 'tenure'){ var t = metricFor(state.tenure); if(t && !t(r)) return false; }
+  if(state.okrug && skip !== 'okrug' && norm(okrugName(r)) !== state.okrug) return false;
+  return true;
+}
+function buildView(){ view = base.filter(function(r){ return passFilters(r); }); }
+function slotOf(key){ return (key==='cert'||key==='buy') ? 'deal' : ((key==='ten'||key==='own') ? 'tenure' : null); }
+
+/* ═══ 5. Загрузка ════════════════════════════════════════════════════ */
+function parseOne(url, ms){
+  return new Promise(function(resolve){
+    var done = false;
+    var timer = setTimeout(function(){ if(!done){ done=true; resolve(null); } }, ms);
+    try{
+      Papa.parse(url,{
+        download:true, header:false, skipEmptyLines:'greedy',
+        complete:function(res){
+          if(done) return; done=true; clearTimeout(timer);
+          var data = res && res.data ? res.data : [];
+          var first = String((data[0]||[])[0]||'').toLowerCase();
+          if(!data.length || first.indexOf('<!doctype')>=0 || first.indexOf('<html')>=0){ resolve(null); return; }
+          resolve(data);
+        },
+        error:function(){ if(!done){ done=true; clearTimeout(timer); resolve(null); } }
+      });
+    }catch(e){ if(!done){ done=true; clearTimeout(timer); resolve(null); } }
+  });
+}
+
+function keepRow(r){
+  if(!r || r.length < 16) return false;
+  if(!okrugName(r)) return false;
+  if(norm(okrugName(r)).indexOf('итог')===0) return false;
+  if(norm(r[COL.area]).indexOf('площад')>=0) return false;
+  return num(r[COL.area]) > 0 || isCert(r) || isBuyout(r) || isTenant(r) || isOwner(r) || signed(r);
+}
+
+/* Минимально правдоподобный объём выгрузки: если строк меньше, ответ считается
+   обрезанным (прокси иногда отдают кэш или обрывают поток). */
+var MIN_ROWS = 100;
+var loadGen = 0;
+
+function load(retry){
+  var gen = ++loadGen;
+  if(!retry) skeleton();
+  document.getElementById('notice').innerHTML = '';
+
+  var src = sources(), best = 0;
+
+  function apply(data){
+    if(gen !== loadGen || !data) return;
+    var f = data.filter(keepRow);
+    if(f.length > best){
+      best = f.length;
+      rows = f; buildBase(); render();
+    }
+  }
+
+  function stage(list){
+    return Promise.all(list.map(function(u){
+      return parseOne(u, 15000).then(apply);
+    }));
+  }
+
+  stage(src.direct).then(function(){
+    if(gen !== loadGen) return;
+    if(best >= MIN_ROWS) return;               // прямой канал дал полную выгрузку
+    return stage(src.proxy);                   // иначе подключаем резерв
+  }).then(function(){
+    if(gen !== loadGen) return;
+    if(best === 0){ failure(); return; }
+    if(best < MIN_ROWS && !retry){
+      setTimeout(function(){ load(true); }, 1500);   // ответ похож на обрезанный — один повтор
+    }
+  });
+}
+
+function skeleton(){
+  var cells = '';
+  for(var i=0;i<5;i++){
+    cells += '<div class="tile" style="--tone:var(--track);opacity:.45">' +
+      '<div class="tile-head"><div class="tile-name">—</div></div>' +
+      '<div class="tile-figs"><span class="fig num">—</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">—</span></div></div>';
+  }
+  document.getElementById('row-lead').innerHTML = cells;
+  document.getElementById('row-lists').innerHTML = '';
+  document.getElementById('filters').innerHTML = '';
+  document.getElementById('c-lead').innerHTML = '';
+  document.getElementById('c-lists').innerHTML = '';
+  document.getElementById('c-mig').innerHTML = '';
+  document.getElementById('o-lead').innerHTML = '';
+  document.getElementById('o-lists').innerHTML = '';
+  document.getElementById('i-lead').innerHTML = '';
+  document.getElementById('i-lists').innerHTML = '';
+  ['c-filters','o-filters','i-filters','s-filters','m-filters','o-addr','i-addr','s-addr','s-lead','s-list','m-lead'].forEach(function(id){ document.getElementById(id).innerHTML = ''; });
+}
+
+function failure(){
+  document.getElementById('row-lead').innerHTML = '';
+  document.getElementById('row-lists').innerHTML = '';
+  document.getElementById('filters').innerHTML = '';
+  document.getElementById('notice').innerHTML =
+    '<div class="notice"><h2>Таблица не отдала данные</h2>' +
+    'Ни прямой канал Google, ни резервные не ответили. Что проверить:' +
+    '<ol><li>У таблицы включён доступ «Просматривать могут все, у кого есть ссылка».</li>' +
+    '<li>Вкладка «Итог» существует и её gid — ' + GID + '.</li>' +
+    '<li>Страница открыта по http(s). При открытии файла с диска (адрес file://) браузер блокирует запрос к Google.</li></ol>' +
+    '<button class="ctrl" type="button" onclick="location.reload()">Загрузить заново</button></div>';
+}
+
+/* ═══ 6. Отрисовка ═══════════════════════════════════════════════════ */
+function ring(pct, tone){
+  var r = 22, c = 2 * Math.PI * r, on = c * Math.max(0, Math.min(1, pct));
+  return '<svg class="ring" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true">' +
+    '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--track)" stroke-width="6"/>' +
+    '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="' + tone + '" stroke-width="6" stroke-linecap="round"' +
+    ' stroke-dasharray="' + on.toFixed(1) + ' ' + c.toFixed(1) + '" transform="rotate(-90 28 28)"/>' +
+    '<text x="28" y="32" text-anchor="middle">' + Math.round(pct * 100) + '%</text></svg>';
+}
+
+function render(){
+  buildView();
+  renderTiles();
+  renderPanels();
+  renderFilters();
+  renderCert();
+  if(tab === 'out') renderOut();
+  if(tab === 'in') renderIn();
+  if(tab === 'stay') renderStay();
+  if(tab === 'mig') renderMig();
+}
+
+/* Ключ округа: «городской округ Балашиха», «Балашиха», «Ленинский г.о.» →
+   один и тот же ключ. ё и е равнозначны. */
+function okrugKey(v){
+  var s = norm(v).replace(/[«»"'().,;:\/№]/g,' ');
+  var drop = {'городской':1,'городского':1,'город':1,'муниципальный':1,'муниципальное':1,
+              'округ':1,'округа':1,'округе':1,'район':1,'г':1,'го':1,'мо':1,'о':1,'гп':1,
+              'московская':1,'область':1,'обл':1,
+              'деревня':1,'дер':1,'д':1,'поселок':1,'пос':1,'п':1,'село':1,'с':1,'мкр':1,'микрорайон':1};
+  var out = [];
+  s.split(/\s+/).forEach(function(w){
+    if(!w || drop[w]) return;
+    if(/^\d+$/.test(w)) return;                 // порядковые номера в сдвоенных ячейках
+    out.push(w);
+  });
+  return out.join(' ');
+}
+
+function isDkp(r){ var s = norm(r[COL.contract]); return s.indexOf('дкп') >= 0 || s.indexOf('дду') >= 0; }
+
+var CERT_METRICS = [
+  { key:null,  name:'Количество',   tone:'var(--c-cert)', test:function(){return true;} },
+  { key:'dkp', name:'ДКП/ДДУ',      tone:'var(--c-agr)',  test:isDkp },
+  { key:'ten', name:'Наниматели',   tone:'var(--c-ten)',  test:isTenant },
+  { key:'own', name:'Собственники', tone:'var(--c-own)',  test:isOwner }
+];
+function tenureTest(k){ return k === 'ten' ? isTenant : (k === 'own' ? isOwner : null); }
+
+/* Строка фильтров вкладки: округ + тип собственности. */
+function tabFilters(cfg){
+  var oOpts = '<option value="">Все округа</option>' + cfg.okrugs
+    .map(function(o){ return '<option value="'+esc(o.id)+'"'+(cfg.okrug===o.id?' selected':'')+'>'+esc(o.name)+'</option>'; }).join('');
+  var tOpts = '<option value="">Все</option>' +
+    '<option value="own"'+(cfg.tenure==='own'?' selected':'')+'>Собственники</option>' +
+    '<option value="ten"'+(cfg.tenure==='ten'?' selected':'')+'>Наниматели</option>';
+  var searchBox = cfg.searchKey
+    ? '<label>Поиск <input type="search" id="'+cfg.box+'-s" value="'+esc(query[cfg.searchKey])+'"' +
+      ' placeholder="адрес или округ"></label>'
+    : '';
+  document.getElementById(cfg.box).innerHTML =
+    '<label>'+cfg.okrugLabel+' <select id="'+cfg.box+'-o">'+oOpts+'</select></label>' +
+    '<label>Тип собственности <select id="'+cfg.box+'-t">'+tOpts+'</select></label>' + searchBox;
+  document.getElementById(cfg.box+'-o').addEventListener('change', function(){ cfg.onOkrug(this.value || null); });
+  document.getElementById(cfg.box+'-t').addEventListener('change', function(){ cfg.onTenure(this.value || null); });
+  if(cfg.searchKey){
+    var inp = document.getElementById(cfg.box+'-s');
+    inp.addEventListener('input', function(){
+      query[cfg.searchKey] = this.value;
+      var fn = refreshAddr[cfg.searchKey];
+      if(fn) fn();                 // перерисовывается только чарт адресов — фокус не теряется
+    });
+  }
+}
+
+function okrugOptions(rowsIn, idFn, nameFn){
+  var seen = {}, list = [];
+  rowsIn.forEach(function(r){
+    var id = idFn(r); if(!id || seen[id]) return;
+    seen[id] = 1; list.push({ id:id, name:nameFn(r) });
+  });
+  list.sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
+  return list;
+}
+
+function renderCert(){
+  snapScroll();
+  var certBase = base.filter(isCert);
+  var tt = tenureTest(certTenure);
+  var byOkrug = certOkrug ? certBase.filter(function(r){ return norm(okrugName(r)) === certOkrug; }) : certBase;
+  var certView = byOkrug.filter(function(r){
+    if(tt && !tt(r)) return false;
+    if(certDkp && !isDkp(r)) return false;
+    return true;
+  });
+  var denom = byOkrug.length;
+
+  document.getElementById('c-lead').innerHTML = CERT_METRICS.map(function(m){
+    var cnt = 0, area = 0;
+    for(var i=0;i<certView.length;i++){
+      if(!m.test(certView[i])) continue;
+      cnt++; area += num(certView[i][COL.area]);
+    }
+    var share = denom ? cnt/denom : 0;
+    var head = '<div class="tile-head"><div class="tile-name">'+m.name+'</div>' + ring(share, m.tone) + '</div>' +
+      '<div class="tile-figs"><span class="fig num">'+fmtInt.format(cnt)+'</span><span class="fig-unit">помещений</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">'+fmtArea.format(area)+' м²</span></div>';
+    if(!m.key) return '<div class="tile" style="--tone:'+m.tone+'">'+head+'</div>';
+    var on = m.key === 'dkp' ? certDkp : (certTenure === m.key);
+    return '<button class="tile" type="button" data-ctenure="'+m.key+'" aria-pressed="'+on+'" style="--tone:'+m.tone+'">'+head+'</button>';
+  }).join('');
+
+  var tiles = document.querySelectorAll('[data-ctenure]');
+  for(var t=0;t<tiles.length;t++) tiles[t].addEventListener('click', function(){
+    var k = this.getAttribute('data-ctenure');
+    if(k === 'dkp') certDkp = !certDkp;
+    else certTenure = (certTenure === k) ? null : k;
+    renderCert();
+  });
+
+  tabFilters({
+    box:'c-filters', okrugLabel:'Округ',
+    okrugs: okrugOptions(certBase, function(r){ return norm(okrugName(r)); }, function(r){ return okrugName(r); }),
+    okrug: certOkrug, tenure: certTenure,
+    onOkrug: function(v){ certOkrug = v; renderCert(); },
+    onTenure: function(v){ certTenure = v; renderCert(); }
+  });
+
+  var byTenure = certBase.filter(function(r){
+    if(tt && !tt(r)) return false;
+    if(certDkp && !isDkp(r)) return false;
+    return true;
+  });
+
+  document.getElementById('c-lists').innerHTML =
+    certPanel('okrug','Сертификаты по округам','var(--c-cert)', certSort, 'csort') +
+    certPanel('dkp','ДКП/ДДУ по округам','var(--c-agr)', dkpSort, 'dsort');
+  var migOut = 0, migStay = 0, areaOut = 0, areaStay = 0;
+  byTenure.forEach(function(r){
+    var to = resolveOkrug(r[COL.newOkrug]);
+    if(!to) return;
+    var a = num(r[COL.area]);
+    if(to === resolveOkrug(okrugName(r))){ migStay++; areaStay += a; }
+    else { migOut++; areaOut += a; }
+  });
+
+  document.getElementById('c-mig').innerHTML =
+    certPanel('out','Уехали в другой округ','var(--c-buy)', null, null, migOut, areaOut) +
+    certPanel('in','Приняли из других округов','var(--c-cert)', null, null, migOut, areaOut) +
+    certPanel('stay','Остались в своём округе','var(--c-own)', null, null, migStay, areaStay);
+
+  fillOkrugList('okrug', byTenure, certSort);
+  fillOkrugList('dkp', byTenure.filter(isDkp), dkpSort);
+  fillMigration('out', byTenure);
+  fillMigration('stay', byTenure);
+  fillIncoming(byTenure);
+
+  bindCertControls();
+  restoreScroll();
+}
+
+function certPanel(id, title, tone, sort, attr, cnt, area){
+  var head = (id === 'out' || id === 'in' || id === 'stay')
+    ? '<button class="panel-open" type="button" id="open-'+id+'"><span class="swatch"></span>'+title+'<span class="arrow">→</span></button>'
+    : '<div class="panel-title"><span class="swatch"></span>'+title+'</div>';
+  var sortBtns = attr
+    ? '<div class="sortgroup" role="group" aria-label="Сортировка: '+title+'">' +
+      '<button class="ctrl" type="button" data-'+attr+'="cnt" aria-pressed="'+(sort==='cnt')+'">По количеству</button>' +
+      '<button class="ctrl" type="button" data-'+attr+'="area" aria-pressed="'+(sort==='area')+'">По площади</button></div>'
+    : '';
+  var badge = (cnt === undefined || cnt === null) ? '' :
+    '<span class="panel-cnt">'+fmtInt.format(cnt)+'</span>' +
+    (area === undefined || area === null ? '' : '<span class="panel-area">'+fmtArea.format(area)+' м²</span>');
+  return '<section class="panel" style="--tone:'+tone+'">' +
+    '<div class="panel-head">' + head + badge + sortBtns +
+    '</div><div class="scroll" id="c-list-'+id+'"></div></section>';
+}
+
+function okrugRows(list, mode, sel){
+  if(!list.length) return '<div class="empty">Нет данных.</div>';
+  var max = list[0][mode] || 1;
+  return list.map(function(o,i){
+    var w = Math.max(2, Math.round(o[mode]/max*100));
+    return '<button class="item" type="button" data-cokrug="'+esc(o.id)+'" aria-pressed="'+(sel===o.id)+'">' +
+      '<span class="item-rank num">'+(i+1)+'</span>' +
+      '<span class="item-name" title="'+esc(o.name)+'">'+esc(o.name)+'</span>' +
+      '<span class="bar"><i style="width:'+w+'%"></i></span>' +
+      '<span class="item-cnt num">'+fmtInt.format(o.cnt)+'</span>' +
+      '<span class="item-area num">'+fmtArea.format(o.area)+' м²</span></button>';
+  }).join('');
+}
+
+function aggregate(rowsIn){
+  var agg = {}, order = [];
+  rowsIn.forEach(function(r){
+    var raw = okrugName(r), id = norm(raw);
+    if(!agg[id]){ agg[id] = { id:id, name:raw, cnt:0, area:0 }; order.push(id); }
+    agg[id].cnt++; agg[id].area += num(r[COL.area]);
+  });
+  return order.map(function(id){ return agg[id]; });
+}
+
+function fillOkrugList(id, rowsIn, mode){
+  var list = aggregate(rowsIn);
+  list.sort(function(a,b){ return (b[mode]-a[mode]) || a.name.localeCompare(b.name,'ru'); });
+  document.getElementById('c-list-'+id).innerHTML = okrugRows(list, mode, certOkrug);
+}
+
+function fillMigration(kind, rowsIn){
+  var picked = rowsIn.filter(function(r){
+    var to = resolveOkrug(r[COL.newOkrug]);
+    if(!to) return false;
+    var same = to === resolveOkrug(okrugName(r));
+    return kind === 'stay' ? same : !same;
+  });
+  var list = aggregate(picked);
+  list.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+  document.getElementById('c-list-'+kind).innerHTML = okrugRows(list, 'cnt', certOkrug);
+}
+
+/* Справочник написаний: ключ — нормализованное значение столбца W,
+   значение — как округ должен выглядеть на дашборде. */
+var CANON = {
+  'лосино-петровский':'Лосино-Петровский',
+  'щелково':'Щёлково','щелковский':'Щёлково',
+  'раменский':'Раменский',
+  'электросталь':'Электросталь',
+  'люберцы':'Люберцы','люберецкий':'Люберцы',
+  'балашиха':'Балашиха',
+  'ленинский':'Ленинский',
+  'домодедово':'Домодедово','домодедовский':'Домодедово',
+  'солнечногорск':'Солнечногорск','солнечногорский':'Солнечногорск',
+  'сергиево-посадский':'Сергиево-Посадский',
+  'дмитровский':'Дмитровский','дмитров':'Дмитровский',
+  'кашира':'Кашира',
+  'рузский':'Рузский',
+  'егорьевск':'Егорьевск',
+  'волоколамский':'Волоколамский',
+  'коломна':'Коломна',
+  'мытищи':'Мытищи','мытищинской':'Мытищи',
+  'пушкинский':'Пушкинский','пушкино':'Пушкинский',
+  'ступино':'Ступино',
+  'подольск':'Подольск',
+  'жуковский':'Жуковский',
+  'королев':'Королёв',
+  'лыткарино':'Лыткарино','лыткарино лыткарино':'Лыткарино',
+  'богородский':'Богородский','ногинск':'Богородский',
+  'ивантеевка':'Пушкинский','красноармейск':'Пушкинский',
+  'хотьково':'Сергиево-Посадский',
+  'звенигород':'Одинцовский',
+  'п монино':'Щёлково','монино':'Щёлково',
+  'луховицы':'Луховицы',
+  'наро-фоминский':'Наро-Фоминский',
+  'одинцовский':'Одинцовский','одинцово':'Одинцовский',
+  'серпухов':'Серпухов',
+  'химки':'Химки',
+  'красногорск':'Красногорск',
+  'можайский':'Можайский',
+  'павлово-посадский':'Павлово-Посадский',
+  'клин':'Клин',
+  'реутов':'Реутов',
+  'пушкинский ивантеевка':'Пушкинский'
+};
+var CANON_KEYS = Object.keys(CANON).sort(function(a,b){ return b.length - a.length; });
+
+/* Возвращает единое название округа для любого написания в столбце W.
+   Сначала точное совпадение ключа, затем поиск известного названия
+   внутри строки — это разбирает ячейки вида «1. г.о. Лыткарино; 2. …»
+   и «Московская область, Люберецкий район». */
+function resolveOkrug(raw){
+  var key = okrugKey(raw);
+  if(!key) return '';
+  if(CANON[key]) return CANON[key];
+  var best = null, bestPos = 1e9;
+  for(var i=0;i<CANON_KEYS.length;i++){
+    var k = CANON_KEYS[i];
+    var pos = (' '+key+' ').indexOf(' '+k+' ');
+    if(pos >= 0 && pos < bestPos){ bestPos = pos; best = CANON[k]; }
+  }
+  if(best) return best;
+  var t = String(raw||'').replace(/\s+/g,' ').trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : key;
+}
+
+function fillIncoming(rowsIn){
+  var agg = {}, order = [];
+  rowsIn.forEach(function(r){
+    var to = resolveOkrug(r[COL.newOkrug]);
+    if(!to) return;
+    if(to === resolveOkrug(okrugName(r))) return;     // переехали внутри своего округа
+    if(!agg[to]){ agg[to] = { id:to, name:to, cnt:0, area:0 }; order.push(to); }
+    agg[to].cnt++; agg[to].area += num(r[COL.area]);
+  });
+  var list = order.map(function(id){ return agg[id]; });
+  list.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+
+  document.getElementById('c-list-in').innerHTML = list.length
+    ? (function(){
+        var max = list[0].cnt || 1;
+        return list.map(function(o,i){
+          var w = Math.max(2, Math.round(o.cnt/max*100));
+          return '<div class="item"><span class="item-rank num">'+(i+1)+'</span>' +
+            '<span class="item-name" title="'+esc(o.name)+'">'+esc(o.name)+'</span>' +
+            '<span class="bar"><i style="width:'+w+'%"></i></span>' +
+            '<span class="item-cnt num">'+fmtInt.format(o.cnt)+'</span>' +
+            '<span class="item-area num">'+fmtArea.format(o.area)+' м²</span></div>';
+        }).join('');
+      })()
+    : '<div class="empty">Нет данных.</div>';
+}
+
+function bindCertControls(){
+  var openOut = document.getElementById('open-out');
+  if(openOut) openOut.addEventListener('click', function(){ switchTo('out'); });
+  var openIn = document.getElementById('open-in');
+  if(openIn) openIn.addEventListener('click', function(){ switchTo('in'); });
+  var openStay = document.getElementById('open-stay');
+  if(openStay) openStay.addEventListener('click', function(){ switchTo('stay'); });
+  var cs = document.querySelectorAll('[data-csort]');
+  for(var a=0;a<cs.length;a++) cs[a].addEventListener('click', function(){
+    certSort = this.getAttribute('data-csort'); renderCert();
+  });
+  var ds = document.querySelectorAll('[data-dsort]');
+  for(var b=0;b<ds.length;b++) ds[b].addEventListener('click', function(){
+    dkpSort = this.getAttribute('data-dsort'); renderCert();
+  });
+  var os = document.querySelectorAll('[data-cokrug]');
+  for(var c=0;c<os.length;c++) os[c].addEventListener('click', function(){
+    var id = this.getAttribute('data-cokrug');
+    certOkrug = (certOkrug === id) ? null : id;
+    renderCert();
+  });
+}
+
+function outRowsAll(){
+  return base.filter(isCert).filter(function(r){
+    var to = resolveOkrug(r[COL.newOkrug]);
+    return to && to !== resolveOkrug(okrugName(r));
+  });
+}
+
+var OUT_METRICS = [
+  { key:null,  name:'Количество',   tone:'var(--c-buy)', test:function(){return true;} },
+  { key:'ten', name:'Наниматели',   tone:'var(--c-ten)', test:isTenant },
+  { key:'own', name:'Собственники', tone:'var(--c-own)', test:isOwner }
+];
+
+function renderOut(){
+  snapScroll();
+  var all = outRowsAll();
+  var ot = tenureTest(outTenure);
+  var byOkrug = all.filter(function(r){
+    if(outOkrug && norm(okrugName(r)) !== outOkrug) return false;
+    if(outTo && resolveOkrug(r[COL.newOkrug]) !== outTo) return false;
+    return true;
+  });
+  var scope = byOkrug.filter(function(r){ return !ot || ot(r); });
+
+  document.getElementById('o-lead').innerHTML = OUT_METRICS.map(function(m){
+    var cnt = 0, area = 0;
+    for(var i=0;i<scope.length;i++){
+      if(!m.test(scope[i])) continue;
+      cnt++; area += num(scope[i][COL.area]);
+    }
+    var share = byOkrug.length ? cnt/byOkrug.length : 0;
+    var head = '<div class="tile-head"><div class="tile-name">'+m.name+'</div>' + ring(share, m.tone) + '</div>' +
+      '<div class="tile-figs"><span class="fig num">'+fmtInt.format(cnt)+'</span><span class="fig-unit">помещений</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">'+fmtArea.format(area)+' м²</span></div>';
+    if(!m.key) return '<div class="tile" style="--tone:'+m.tone+'">'+head+'</div>';
+    return '<button class="tile" type="button" data-otenure="'+m.key+'" aria-pressed="'+(outTenure===m.key)+'" style="--tone:'+m.tone+'">'+head+'</button>';
+  }).join('');
+
+  var otiles = document.querySelectorAll('[data-otenure]');
+  for(var t=0;t<otiles.length;t++) otiles[t].addEventListener('click', function(){
+    var k = this.getAttribute('data-otenure');
+    outTenure = (outTenure === k) ? null : k;
+    renderOut();
+  });
+
+  tabFilters({
+    box:'o-filters', okrugLabel:'Округ выбытия',
+    okrugs: okrugOptions(all, function(r){ return norm(okrugName(r)); }, function(r){ return okrugName(r); }),
+    okrug: outOkrug, tenure: outTenure, searchKey:'out',
+    onOkrug: function(v){ outOkrug = v; renderOut(); },
+    onTenure: function(v){ outTenure = v; renderOut(); }
+  });
+
+  var toTitle = outOkrug
+    ? 'Куда уехали · ' + esc(okrugLabel(all, outOkrug))
+    : 'Куда уехали';
+  document.getElementById('o-lists').innerHTML =
+    '<section class="panel" style="--tone:var(--c-buy)">' +
+      '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>Откуда уехали</div></div>' +
+      '<div class="scroll" id="o-list-from"></div></section>' +
+    '<section class="panel" style="--tone:var(--c-cert)">' +
+      '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>'+toTitle+'</div></div>' +
+      '<div class="scroll" id="o-list-to"></div></section>';
+
+  var fromList = aggregate(all.filter(function(r){
+    if(ot && !ot(r)) return false;
+    if(outTo && resolveOkrug(r[COL.newOkrug]) !== outTo) return false;
+    return true;
+  }));
+  fromList.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+  document.getElementById('o-list-from').innerHTML = okrugRows(fromList, 'cnt', outOkrug);
+
+  if(!outOkrug){
+    document.getElementById('o-list-to').innerHTML =
+      '<div class="empty">Выберите округ в списке слева — здесь появятся округа, куда уехали из него.</div>';
+  }else{
+    var agg = {}, order = [];
+    all.filter(function(r){
+      if(norm(okrugName(r)) !== outOkrug) return false;
+      return !ot || ot(r);
+    }).forEach(function(r){
+      var to = resolveOkrug(r[COL.newOkrug]);
+      if(!to) return;
+      if(!agg[to]){ agg[to] = { id:to, name:to, cnt:0, area:0 }; order.push(to); }
+      agg[to].cnt++; agg[to].area += num(r[COL.area]);
+    });
+    var toList = order.map(function(id){ return agg[id]; });
+    toList.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+    document.getElementById('o-list-to').innerHTML = toList.length
+      ? okrugRows(toList, 'cnt', outTo).replace(/data-cokrug/g,'data-oto')
+      : '<div class="empty">Нет данных.</div>';
+  }
+
+  var items = document.querySelectorAll('#o-list-from [data-cokrug]');
+  for(var j=0;j<items.length;j++) items[j].addEventListener('click', function(){
+    var id = this.getAttribute('data-cokrug');
+    outOkrug = (outOkrug === id) ? null : id;
+    outTo = null; addrSel.out = null;
+    renderOut();
+  });
+  var toItems = document.querySelectorAll('#o-list-to [data-oto]');
+  for(var k=0;k<toItems.length;k++) toItems[k].addEventListener('click', function(){
+    var id = this.getAttribute('data-oto');
+    outTo = (outTo === id) ? null : id; addrSel.out = null;
+    renderOut();
+  });
+
+  if(addrSel.out && scope.indexOf(addrSel.out) < 0) addrSel.out = null;
+  var picked = addrSel.out ? [addrSel.out] : [];
+
+  refreshAddr.out = function(){
+    renderAddresses('o-addr', applyQuery(scope, query.out), {
+      selectable:true, selected:addrSel.out,
+      onSelect:function(rec){ addrSel.out = (addrSel.out === rec) ? null : rec; renderOut(); }
+    });
+  };
+  refreshAddr.out();
+  panoSel.out = picked.length ? panoUrl(picked[0]) : '';
+  restoreScroll();
+  drawMigMap('o-map', picked.length ? picked : scope);
+}
+
+function okrugLabel(rowsIn, id){
+  for(var i=0;i<rowsIn.length;i++) if(norm(okrugName(rowsIn[i])) === id) return okrugName(rowsIn[i]);
+  return id;
+}
+
+/* Центры городских округов МО. Ключ — нормализованное название
+   (ё=е, нижний регистр), значение — [широта, долгота]. */
+var CENTERS_RAW = {
+  'Балашиха':[55.7964,37.9383],'Богородский':[55.8703,38.4441],'Бронницы':[55.4258,38.2700],
+  'Волоколамский':[56.0383,35.9500],'Воскресенск':[55.3200,38.6700],'Дмитровский':[56.3500,37.5200],
+  'Долгопрудный':[55.9386,37.5100],'Домодедово':[55.4408,37.7681],'Дубна':[56.7333,37.1667],
+  'Егорьевск':[55.3833,39.0333],'Жуковский':[55.5958,38.1167],'Зарайск':[54.7583,38.8750],
+  'Ивантеевка':[55.9711,37.9206],'Истра':[55.9167,36.8667],'Кашира':[54.8417,38.1583],
+  'Клин':[56.3333,36.7333],'Коломна':[55.0833,38.7833],'Королёв':[55.9167,37.8167],
+  'Котельники':[55.6583,37.8667],'Красногорск':[55.8219,37.3361],'Краснознаменск':[55.5989,37.0322],
+  'Ленинский':[55.5517,37.7069],'Лобня':[56.0167,37.4667],'Лосино-Петровский':[55.8703,38.2006],
+  'Луховицы':[54.9667,39.0333],'Люберцы':[55.6781,37.8939],'Лыткарино':[55.5822,37.9061],
+  'Можайский':[55.5083,36.0167],'Мытищи':[55.9128,37.7297],'Наро-Фоминский':[55.3883,36.7297],
+  'Одинцовский':[55.6761,37.2797],'Орехово-Зуевский':[55.8000,38.9833],'Павлово-Посадский':[55.7833,38.6500],
+  'Подольск':[55.4311,37.5486],'Протвино':[54.8667,37.2167],'Пушкинский':[56.0167,37.8500],
+  'Пущино':[54.8342,37.6211],'Раменский':[55.5667,38.2333],'Реутов':[55.7614,37.8558],
+  'Рузский':[55.7000,36.1833],'Сергиево-Посадский':[56.3000,38.1333],'Серебряные Пруды':[54.4500,38.7167],
+  'Серпухов':[54.9167,37.4167],'Солнечногорск':[56.1833,36.9833],'Ступино':[54.9000,38.0667],
+  'Талдомский':[56.7333,37.5333],'Фрязино':[55.9600,38.0458],'Химки':[55.8883,37.4297],
+  'Черноголовка':[56.0086,38.3661],'Чехов':[55.1500,37.4667],'Шатура':[55.5667,39.5333],
+  'Шаховская':[56.0333,35.5167],'Щёлково':[55.9167,38.0167],'Электросталь':[55.7833,38.4500],
+  'Дзержинский':[55.6294,37.8567]
+};
+var CENTERS = {};
+Object.keys(CENTERS_RAW).forEach(function(k){ CENTERS[norm(k)] = CENTERS_RAW[k]; });
+function centerOf(name){ return CENTERS[norm(name)] || null; }
+
+var MAPS = {};
+
+/* ── Подготовка адреса к геокодированию ─────────────────────────────────
+   Чинит то, что мешало распознаванию: сдвоенные ячейки, кадастровые номера,
+   договорные обороты, строительные ориентиры и частые опечатки. */
+var ADDR_FIX = [
+  [/сергиевпосад/gi, 'Сергиев Посад'],
+  [/рапйоне|раоне/gi, 'районе'],
+  [/железнолорожн/gi, 'Железнодорожн'],
+  [/школная/gi, 'Школьная'],
+  [/трубицкая/gi, 'Трубецкая'],
+  [/автозоводск/gi, 'Автозаводск'],
+  [/большевитск/gi, 'Большевистск'],
+  [/кв\.артал/gi, 'квартал'],
+  [/биокомбмната/gi, 'Биокомбината'],
+  [/мкрн\.?/gi, 'мкр.'],
+  [/фидоскинско/gi, 'Федоскинско'],
+  [/стрительств/gi, 'строительств'],
+  [/железнодоржн/gi, 'Железнодорожн'],
+  [/^ул\.\s*Ступино/i, 'г. Ступино']      /* в ячейке город записан как улица */
+  , [/(дом|корпус|корп\.?|д\.|к\.)\s*[lI](?![а-яa-z])/gi, '$1 1']   /* латинская l вместо единицы */
+];
+var ADDR_DROP = [
+  /кадастровый\s+номер[^,;]*/gi,
+  /кадастровым\s+номером[^,;]*/gi,
+  /к\.?\s?н\.?[:\s]*\d{2}:\d{2}:\d+:\d+/gi,
+  /к№\s?\d{2}:\d{2}:\d+:\d+/gi,
+  /\d{2}:\d{2}:\d+:\d+/g,
+  /на\s+земельном\s+участке[^,;]*/gi,
+  /земельный\s+участок[^,;]*/gi,
+  /принадлежащий\s+застройщику[^;]*/gi,
+  /что\s+подтверждается[^;]*/gi,
+  /условный\s*\(строительный\)[^,;]*/gi,
+  /проектный\s+номер[^,;]*/gi,
+  /усл\.?\s*(номер|№)[^,;]*/gi,
+  /общей\s+площадью[^,;]*/gi,
+  /этаж\s*№?\s*\d+/gi,
+  /секция\s*№?\s*\d+/gi,
+  /\(\s*строительный\s+адрес[^)]*\)/gi,
+  /на\s+з\/у\s+с?[^,;]*/gi,          /* «на з/у с к.н. …» — остаток после вырезки номера */
+  /з\/у\s+с\s*$/gi,
+  /\(\s*\)/g,                        /* пустые скобки после вырезок */
+  /,\s*Российская\s+Федерация\s*,\s*городской\s+округ[^,]*/gi,   /* хвост после улицы */
+  /\(?\s*[^,;()]*очередь\s+строительства[^,;()]*\)?/gi,   /* «1-я очередь строительства» */
+  /\(?\s*\d*[-\sа-я]*этап[а]?\s+строительства[^,;()]*\)?/gi,
+  /в\s+части:[^,;]*/gi,
+  /жилые\s+дома\s+корпус[^;]*/gi,
+  /студия\s*№?\s*\d+/gi,
+  /(усл\.?|ус\.?|условный)\s*(номер|№)[^,;]*/gi,
+  /,\s*(к|д|кв|корп|кор)\s*$/gi      /* оборванный хвост вида «…, к» */
+];
+
+/* Одна ячейка может содержать два адреса — разбиваем по «;» и по «1. … 2. …». */
+var ADDR_MARK = /(ул\.|улица|пер\.|переулок|проезд|шоссе|ш\.|мкр|микрорайон|квартал|корпус|корп|пос|посёлок|поселок|пгт|рп|дп|дер|деревня|село|с\.|д\.|г\.|город|з\/у|участок)/i;
+
+function splitAddresses(raw){
+  var t = String(raw||'').replace(/\s+/g,' ').trim();
+  if(!t) return [];
+  /* Разделители второго адреса в одной ячейке: «;», нумерация «1. … 2. …»,
+     оборот «по адресу», повтор «Московская область» в середине строки. */
+  t = t.replace(/\s*по\s+адресу\s*:?\s*/gi, ';');
+  t = t.replace(/(.)(?=\s*Московская\s+(?:обл|область))/g, function(m, ch, off){
+    return off > 5 ? ch + ';' : ch;
+  });
+  var parts = t.split(/\s*;\s*/);
+  if(parts.length === 1) parts = t.split(/\s(?=\d[.)]\s?[А-Яа-яЁё])/);
+  return parts.map(function(x){ return x.replace(/^\d[.)]\s*/,'').replace(/^[,\s]+|[,\s]+$/g,'').trim(); })
+              .filter(function(x){
+                if(x.length <= 3) return false;
+                return x.indexOf(',') >= 0 || /\d/.test(x) || ADDR_MARK.test(x);
+              });
+}
+
+/* «г. Щелково, ул. Щелково, ул. Полевая, д.4а» — лишняя «улица» с названием
+   города сбивает геокодер на уровень улицы. Убираем её, если в адресе есть
+   и город с тем же названием, и другая улица. */
+function dropCityAsStreet(t){
+  var parts = t.split(',').map(function(x){ return x.trim(); });
+  var cities = {};
+  parts.forEach(function(x){
+    var m = x.match(/^(?:г\.?|гор\.?|город)\s+(.+)$/i);
+    if(m) cities[norm(m[1])] = 1;
+  });
+  var streets = parts.filter(function(x){ return /^(?:ул\.?|улица)\s+/i.test(x); });
+  if(streets.length < 2) return t;
+  var kept = parts.filter(function(x){
+    var m = x.match(/^(?:ул\.?|улица)\s+(.+)$/i);
+    return !(m && cities[norm(m[1])]);
+  });
+  return kept.join(', ');
+}
+
+function cleanAddr(raw){
+  var t = String(raw||'').replace(/\s+/g,' ').trim();
+  ADDR_FIX.forEach(function(pair){ t = t.replace(pair[0], pair[1]); });
+  ADDR_DROP.forEach(function(re){ t = t.replace(re, ' '); });
+  /* Второй адрес, приписанный через запятую после номера квартиры,
+     отбрасываем — остаётся первый: «…кв. 161, пгт Поварово, ул. Школьная…». */
+  t = t.replace(/(кв\.?\s*№?\s*\d+[а-я]?)\s*,\s*(?:пгт|дп|рп|п\.|пос\.|посёлок|поселок|г\.|город|с\.|село|дер\.?|деревня|мкр)\s+[^,]*(?:,[^,]*)*$/i, '$1');
+  t = dropCityAsStreet(t);
+  return t.replace(/[«»"]/g,' ')
+          .replace(/\s*,\s*/g, ', ')
+          .replace(/(,\s*)+/g, ', ')
+          .replace(/\s+/g,' ')
+          .replace(/^[,\s]+|[,\s]+$/g,'')
+          .trim();
+}
+
+/* Готовые к геокодированию варианты адреса приобретения для одной строки. */
+function addrVariants(r){
+  var okrug = resolveOkrug(r[COL.newOkrug]) || '';
+  return splitAddresses(r[COL.newAddr]).map(function(part){
+    var a = cleanAddr(part);
+    if(!a) return '';
+    return (okrug && a.toLowerCase().indexOf(okrug.toLowerCase()) < 0 ? okrug + ', ' : '') + a;
+  }).filter(Boolean);
+}
+
+/* Цвет линий: выбытие — охра, приём — синий, «остались» — сливовый. */
+var MIG_LINE = { 'o-map':'#a96a15', 'i-map':'#1b4d8f', 's-map':'#6c4a86', 'm-map':'#a96a15' };
+
+function drawMigMap(mapId, scope, lineColor){
+  var note = document.getElementById(mapId+'-note');
+  if(typeof ymaps === 'undefined'){
+    if(note) note.textContent = 'Яндекс.Карты не загрузились — проверьте ключ и разрешённые домены';
+    return;
+  }
+  ymaps.ready(function(){
+    if(!MAPS[mapId]){
+      MAPS[mapId] = new ymaps.Map(mapId, {
+        center:[55.65,37.6], zoom:8,
+        controls:['zoomControl','fullscreenControl','typeSelector']
+      }, { suppressMapOpenBlock:true });
+    }
+    var omap = MAPS[mapId];
+    omap.geoObjects.removeAll();
+
+    var pairs = {}, missing = {};
+    scope.forEach(function(r){
+      var from = okrugName(r), to = resolveOkrug(r[COL.newOkrug]);
+      if(!to) return;
+      var a = centerOf(from), b = centerOf(to);
+      if(!a){ missing[from] = 1; return; }
+      if(!b){ missing[to] = 1; return; }
+      var id = norm(from) + '→' + norm(to);
+      if(!pairs[id]) pairs[id] = { from:from, to:to, a:a, b:b, cnt:0, area:0 };
+      pairs[id].cnt++; pairs[id].area += num(r[COL.area]);
+    });
+
+    var keys = Object.keys(pairs), pts = [], maxCnt = 1;
+    keys.forEach(function(k){ if(pairs[k].cnt > maxCnt) maxCnt = pairs[k].cnt; });
+
+    keys.forEach(function(k){
+      var p = pairs[k];
+      if(norm(p.from) === norm(p.to)){ pts.push(p.a); return; }   // переезд внутри округа — линии нет
+      var w = 2 + Math.round(p.cnt / maxCnt * 8);
+      omap.geoObjects.add(new ymaps.Polyline([p.a, p.b], {
+        balloonContent:'<b>'+esc(p.from)+' → '+esc(p.to)+'</b><br>'+p.cnt+' помещений · '+fmtArea.format(p.area)+' м²',
+        hintContent:esc(p.from)+' → '+esc(p.to)+': '+p.cnt
+      }, {
+        strokeColor: (typeof lineColor === 'function' ? lineColor(p) : lineColor) || MIG_LINE[mapId] || '#a96a15',
+        strokeWidth:w, strokeOpacity:0.6
+      }));
+      pts.push(p.a, p.b);
+    });
+
+    /* Метки округов. Подпись зависит от того, что попало в выборку:
+       выбытие, приём или переезд внутри своего округа. */
+    var stats = {}, sOrder = [];
+    function bump(name, center, field, n){
+      var k = norm(name);
+      if(!stats[k]){ stats[k] = { name:name, c:center, left:0, stay:0, recv:0 }; sOrder.push(k); }
+      stats[k][field] += n;
+    }
+    keys.forEach(function(k){
+      var p = pairs[k];
+      if(norm(p.from) === norm(p.to)) bump(p.from, p.a, 'stay', p.cnt);
+      else { bump(p.from, p.a, 'left', p.cnt); bump(p.to, p.b, 'recv', p.cnt); }
+    });
+
+    sOrder.forEach(function(k){
+      var o = stats[k], lines = [];
+      if(o.left) lines.push('уехали: ' + o.left);
+      if(o.recv) lines.push('приняли: ' + o.recv);
+      if(o.stay) lines.push('остались: ' + o.stay);
+      var total = o.left + o.recv + o.stay;
+      var orange = (o.left + o.stay) >= o.recv;
+      omap.geoObjects.add(new ymaps.Placemark(o.c, {
+        iconContent:String(total),
+        balloonContent:'<b>'+esc(o.name)+'</b><br>'+lines.join('<br>'),
+        hintContent:esc(o.name)+' · '+lines.join(' · ')
+      }, {
+        preset: orange ? 'islands#orangeCircleIconWithContent' : 'islands#blueCircleIconWithContent',
+        iconColor: orange ? '#a96a15' : '#1b4d8f'
+      }));
+    });
+
+    if(pts.length){
+      try{ omap.setBounds(ymaps.util.bounds.fromPoints(pts), { checkZoomRange:true, zoomMargin:40 }); }catch(e){}
+    }
+    var miss = Object.keys(missing);
+    if(note) note.textContent = keys.length + ' направлений' +
+      (miss.length ? ' · без координат: ' + miss.join(', ') : '');
+  });
+}
+
+/* Ссылка на панораму по адресу приобретения. */
+function panoUrl(r){
+  var v = addrVariants(r);
+  if(!v.length) return '';
+  return 'https://yandex.ru/maps/?l=stv%2Csta&text=' + encodeURIComponent(v[0]);
+}
+
+/* Чарт с адресами: откуда (столбец F) → куда (столбец X).
+   selectable: строки кликабельны, выбор сужает карту до одного направления.
+   Выбор хранится по самой строке таблицы, а не по тексту адреса. */
+/* Позиция прокрутки списков не должна теряться при перерисовке:
+   клик по адресу или округу оставляет список там же, где он был. */
+var scrollKeep = {};
+function snapScroll(){
+  var boxes = document.querySelectorAll('.scroll');
+  for(var i=0;i<boxes.length;i++){
+    var id = boxes[i].id || (boxes[i].parentNode && boxes[i].parentNode.id);
+    if(id) scrollKeep[id] = boxes[i].scrollTop;
+  }
+}
+function restoreScroll(){
+  var boxes = document.querySelectorAll('.scroll');
+  for(var i=0;i<boxes.length;i++){
+    var id = boxes[i].id || (boxes[i].parentNode && boxes[i].parentNode.id);
+    if(id && scrollKeep[id]) boxes[i].scrollTop = scrollKeep[id];
+  }
+}
+
+function renderAddresses(boxId, rowsIn, opts){
+  opts = opts || {};
+  var list = rowsIn.slice().sort(function(a,b){
+    return okrugName(a).localeCompare(okrugName(b),'ru') ||
+           String(a[COL.addr]||'').localeCompare(String(b[COL.addr]||''),'ru');
+  });
+  var body = list.length
+    ? list.map(function(r,i){
+        var attrs = opts.selectable
+          ? ' role="button" tabindex="0" data-i="'+i+'" aria-pressed="'+(opts.selected === r)+'"'
+          : '';
+        var pUrl = panoUrl(r);
+        var pano = pUrl
+          ? '<a class="addr-ya" href="'+pUrl+'" target="_blank" rel="noopener" title="Панорама по адресу приобретения">Я</a>'
+          : '<span></span>';
+        return '<div class="addr-item"'+attrs+'><span class="item-rank num">'+(i+1)+'</span>' +
+          '<span class="addr-txt addr-from"><span class="addr-okrug">'+esc(okrugName(r))+'</span>' +
+            esc(String(r[COL.addr]||'—').trim()) + '</span>' +
+          '<span class="addr-txt addr-to"><span class="addr-okrug">'+esc(resolveOkrug(r[COL.newOkrug])||'—')+'</span>' +
+            esc(String(r[COL.newAddr]||'—').trim()) + '</span>' +
+          '<span class="addr-area num">'+fmtArea.format(num(r[COL.area]))+' м²</span>' + pano + '</div>';
+      }).join('')
+    : '<div class="empty">Нет записей по текущему фильтру.</div>';
+
+  document.getElementById(boxId).innerHTML =
+    '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>Адреса · откуда → куда</div>' +
+    '<span style="margin-left:auto;font-size:12px;color:var(--muted)">'+fmtInt.format(list.length)+' записей</span></div>' +
+    '<div class="scroll">'+body+'</div>';
+
+  if(opts.selectable && opts.onSelect){
+    var rows = document.querySelectorAll('#'+boxId+' [data-i]');
+    for(var i=0;i<rows.length;i++){
+      rows[i].addEventListener('click', function(e){
+        if(e.target.closest('.addr-ya')) return;      // клик по кнопке панорамы
+        opts.onSelect(list[+this.getAttribute('data-i')]);
+      });
+      rows[i].addEventListener('keydown', function(e){
+        if(e.key !== 'Enter' && e.key !== ' ') return;
+        e.preventDefault();
+        var rec = list[+this.getAttribute('data-i')];
+        if(e.key === 'Enter' && opts.selected === rec){
+          var u = panoUrl(rec);
+          if(u) window.open(u, '_blank', 'noopener');
+          return;
+        }
+        opts.onSelect(rec);
+      });
+    }
+  }
+}
+
+var IN_METRICS = [
+  { key:null,  name:'Количество',   tone:'var(--c-cert)', test:function(){return true;} },
+  { key:'ten', name:'Наниматели',   tone:'var(--c-ten)',  test:isTenant },
+  { key:'own', name:'Собственники', tone:'var(--c-own)',  test:isOwner }
+];
+
+function renderIn(){
+  snapScroll();
+  var all = outRowsAll();                       // те же межокружные переезды
+  var it = tenureTest(inTenure);
+  var byOkrug = all.filter(function(r){
+    if(inOkrug && resolveOkrug(r[COL.newOkrug]) !== inOkrug) return false;
+    if(inFrom && norm(okrugName(r)) !== inFrom) return false;
+    return true;
+  });
+  var scope = byOkrug.filter(function(r){ return !it || it(r); });
+
+  document.getElementById('i-lead').innerHTML = IN_METRICS.map(function(m){
+    var cnt = 0, area = 0;
+    for(var i=0;i<scope.length;i++){
+      if(!m.test(scope[i])) continue;
+      cnt++; area += num(scope[i][COL.area]);
+    }
+    var share = byOkrug.length ? cnt/byOkrug.length : 0;
+    var head = '<div class="tile-head"><div class="tile-name">'+m.name+'</div>' + ring(share, m.tone) + '</div>' +
+      '<div class="tile-figs"><span class="fig num">'+fmtInt.format(cnt)+'</span><span class="fig-unit">помещений</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">'+fmtArea.format(area)+' м²</span></div>';
+    if(!m.key) return '<div class="tile" style="--tone:'+m.tone+'">'+head+'</div>';
+    return '<button class="tile" type="button" data-itenure="'+m.key+'" aria-pressed="'+(inTenure===m.key)+'" style="--tone:'+m.tone+'">'+head+'</button>';
+  }).join('');
+
+  var itiles = document.querySelectorAll('[data-itenure]');
+  for(var t=0;t<itiles.length;t++) itiles[t].addEventListener('click', function(){
+    var k = this.getAttribute('data-itenure');
+    inTenure = (inTenure === k) ? null : k;
+    renderIn();
+  });
+
+  tabFilters({
+    box:'i-filters', okrugLabel:'Округ приобретения',
+    okrugs: okrugOptions(all, function(r){ return resolveOkrug(r[COL.newOkrug]); }, function(r){ return resolveOkrug(r[COL.newOkrug]); }),
+    okrug: inOkrug, tenure: inTenure, searchKey:'in',
+    onOkrug: function(v){ inOkrug = v; renderIn(); },
+    onTenure: function(v){ inTenure = v; renderIn(); }
+  });
+
+  var fromTitle = inOkrug ? 'Откуда приехали · ' + esc(inOkrug) : 'Откуда приехали';
+  document.getElementById('i-lists').innerHTML =
+    '<section class="panel" style="--tone:var(--c-cert)">' +
+      '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>Куда приехали</div></div>' +
+      '<div class="scroll" id="i-list-to"></div></section>' +
+    '<section class="panel" style="--tone:var(--c-buy)">' +
+      '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>'+fromTitle+'</div></div>' +
+      '<div class="scroll" id="i-list-from"></div></section>';
+
+  var agg = {}, order = [];
+  all.filter(function(r){
+    if(it && !it(r)) return false;
+    if(inFrom && norm(okrugName(r)) !== inFrom) return false;
+    return true;
+  }).forEach(function(r){
+    var to = resolveOkrug(r[COL.newOkrug]);
+    if(!to) return;
+    if(!agg[to]){ agg[to] = { id:to, name:to, cnt:0, area:0 }; order.push(to); }
+    agg[to].cnt++; agg[to].area += num(r[COL.area]);
+  });
+  var toList = order.map(function(id){ return agg[id]; });
+  toList.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+  document.getElementById('i-list-to').innerHTML = okrugRows(toList, 'cnt', inOkrug);
+
+  if(!inOkrug){
+    document.getElementById('i-list-from').innerHTML =
+      '<div class="empty">Выберите округ в списке слева — здесь появятся округа, откуда в него приехали.</div>';
+  }else{
+    var fromList = aggregate(all.filter(function(r){
+      if(resolveOkrug(r[COL.newOkrug]) !== inOkrug) return false;
+      return !it || it(r);
+    }));
+    fromList.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+    document.getElementById('i-list-from').innerHTML = fromList.length
+      ? okrugRows(fromList, 'cnt', inFrom).replace(/data-cokrug/g,'data-ifrom')
+      : '<div class="empty">Нет данных.</div>';
+  }
+
+  var items = document.querySelectorAll('#i-list-to [data-cokrug]');
+  for(var j=0;j<items.length;j++) items[j].addEventListener('click', function(){
+    var id = this.getAttribute('data-cokrug');
+    inOkrug = (inOkrug === id) ? null : id;
+    inFrom = null; addrSel['in'] = null;
+    renderIn();
+  });
+  var fromItems = document.querySelectorAll('#i-list-from [data-ifrom]');
+  for(var k=0;k<fromItems.length;k++) fromItems[k].addEventListener('click', function(){
+    var id = this.getAttribute('data-ifrom');
+    inFrom = (inFrom === id) ? null : id;
+    addrSel['in'] = null;
+    renderIn();
+  });
+
+  if(addrSel['in'] && scope.indexOf(addrSel['in']) < 0) addrSel['in'] = null;
+  var pickedIn = addrSel['in'] ? [addrSel['in']] : [];
+  refreshAddr['in'] = function(){
+    renderAddresses('i-addr', applyQuery(scope, query['in']), {
+      selectable:true, selected:addrSel['in'],
+      onSelect:function(rec){ addrSel['in'] = (addrSel['in'] === rec) ? null : rec; renderIn(); }
+    });
+  };
+  refreshAddr['in']();
+  panoSel['in'] = pickedIn.length ? panoUrl(pickedIn[0]) : '';
+  restoreScroll();
+  drawMigMap('i-map', pickedIn.length ? pickedIn : scope);
+}
+
+function stayRowsAll(){
+  return base.filter(isCert).filter(function(r){
+    var to = resolveOkrug(r[COL.newOkrug]);
+    return to && to === resolveOkrug(okrugName(r));
+  });
+}
+
+var STAY_METRICS = [
+  { key:null,  name:'Количество',   tone:'var(--c-own)', test:function(){return true;} },
+  { key:'ten', name:'Наниматели',   tone:'var(--c-ten)', test:isTenant },
+  { key:'own', name:'Собственники', tone:'var(--c-buy)', test:isOwner }
+];
+
+function renderStay(){
+  snapScroll();
+  var all = stayRowsAll();
+  var st = tenureTest(stayTenure);
+  var byOkrug = stayOkrug ? all.filter(function(r){ return norm(okrugName(r)) === stayOkrug; }) : all;
+  var scope = byOkrug.filter(function(r){ return !st || st(r); });
+
+  document.getElementById('s-lead').innerHTML = STAY_METRICS.map(function(m){
+    var cnt = 0, area = 0;
+    for(var i=0;i<scope.length;i++){
+      if(!m.test(scope[i])) continue;
+      cnt++; area += num(scope[i][COL.area]);
+    }
+    var share = byOkrug.length ? cnt/byOkrug.length : 0;
+    var head = '<div class="tile-head"><div class="tile-name">'+m.name+'</div>' + ring(share, m.tone) + '</div>' +
+      '<div class="tile-figs"><span class="fig num">'+fmtInt.format(cnt)+'</span><span class="fig-unit">помещений</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">'+fmtArea.format(area)+' м²</span></div>';
+    if(!m.key) return '<div class="tile" style="--tone:'+m.tone+'">'+head+'</div>';
+    return '<button class="tile" type="button" data-stenure="'+m.key+'" aria-pressed="'+(stayTenure===m.key)+'" style="--tone:'+m.tone+'">'+head+'</button>';
+  }).join('');
+
+  var stiles = document.querySelectorAll('[data-stenure]');
+  for(var t=0;t<stiles.length;t++) stiles[t].addEventListener('click', function(){
+    var k = this.getAttribute('data-stenure');
+    stayTenure = (stayTenure === k) ? null : k;
+    renderStay();
+  });
+
+  tabFilters({
+    box:'s-filters', okrugLabel:'Округ',
+    okrugs: okrugOptions(all, function(r){ return norm(okrugName(r)); }, function(r){ return okrugName(r); }),
+    okrug: stayOkrug, tenure: stayTenure, searchKey:'stay',
+    onOkrug: function(v){ stayOkrug = v; addrSel.stay = null; renderStay(); },
+    onTenure: function(v){ stayTenure = v; renderStay(); }
+  });
+
+  var list = aggregate(all.filter(function(r){ return !st || st(r); }));
+  list.sort(function(a,b){ return (b.cnt-a.cnt) || a.name.localeCompare(b.name,'ru'); });
+  document.getElementById('s-list').innerHTML =
+    '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>Остались по округам</div></div>' +
+    '<div class="scroll" id="s-list-okrug">' + okrugRows(list, 'cnt', stayOkrug).replace(/data-cokrug/g,'data-sokrug') + '</div>';
+  var items = document.querySelectorAll('#s-list-okrug [data-sokrug]');
+  for(var j=0;j<items.length;j++) items[j].addEventListener('click', function(){
+    var id = this.getAttribute('data-sokrug');
+    stayOkrug = (stayOkrug === id) ? null : id;
+    addrSel.stay = null;
+    renderStay();
+  });
+
+  if(addrSel.stay && scope.indexOf(addrSel.stay) < 0) addrSel.stay = null;
+  var picked = addrSel.stay ? [addrSel.stay] : [];
+  refreshAddr.stay = function(){
+    renderAddresses('s-addr', applyQuery(scope, query.stay), {
+      selectable:true, selected:addrSel.stay,
+      onSelect:function(rec){ addrSel.stay = (addrSel.stay === rec) ? null : rec; renderStay(); }
+    });
+  };
+  refreshAddr.stay();
+  panoSel.stay = picked.length ? panoUrl(picked[0]) : '';
+  restoreScroll();
+  drawMigMap('s-map', picked.length ? picked : scope);
+}
+
+/* Вкладка «Миграция»: все сертификаты с указанным округом приобретения. */
+function migRowsAll(){
+  return base.filter(isCert).filter(function(r){ return !!resolveOkrug(r[COL.newOkrug]); });
+}
+function migFrom(r){ return norm(okrugName(r)); }
+function migTo(r){ return norm(resolveOkrug(r[COL.newOkrug])); }
+function migMoved(r){ return migFrom(r) !== migTo(r); }
+
+function migMatch(r, flow, okrug){
+  if(flow === 'out')  return migMoved(r) && (!okrug || migFrom(r) === okrug);
+  if(flow === 'in')   return migMoved(r) && (!okrug || migTo(r) === okrug);
+  if(flow === 'stay') return !migMoved(r) && (!okrug || migFrom(r) === okrug);
+  return !okrug || migFrom(r) === okrug || migTo(r) === okrug;
+}
+
+var MIG_METRICS = [
+  { key:'out',  name:'Уехали',       tone:'var(--c-buy)'  },
+  { key:'in',   name:'Приняли',      tone:'var(--c-cert)' },
+  { key:'stay', name:'Остались',     tone:'var(--c-agr)'  },
+  { key:'ten',  name:'Наниматели',   tone:'var(--c-ten)'  },
+  { key:'own',  name:'Собственники', tone:'var(--c-own)'  }
+];
+
+function renderMig(){
+  snapScroll();
+  var all = migRowsAll();
+  var mt = tenureTest(migTenure);
+  var denomRows = all.filter(function(r){ return migMatch(r, migFlow, migOkrug); });
+  var scope = denomRows.filter(function(r){ return !mt || mt(r); });
+  var denom = all.filter(function(r){ return migMatch(r, null, migOkrug); }).length;
+
+  document.getElementById('m-lead').innerHTML = MIG_METRICS.map(function(m){
+    var rows;
+    if(m.key === 'ten' || m.key === 'own'){
+      var tf = tenureTest(m.key);
+      rows = all.filter(function(r){ return migMatch(r, migFlow, migOkrug) && tf(r); });
+    }else{
+      rows = all.filter(function(r){ return migMatch(r, m.key, migOkrug) && (!mt || mt(r)); });
+    }
+    var cnt = rows.length, area = 0;
+    rows.forEach(function(r){ area += num(r[COL.area]); });
+    var share = denom ? cnt/denom : 0;
+    var on = (m.key === 'ten' || m.key === 'own') ? (migTenure === m.key) : (migFlow === m.key);
+    return '<button class="tile" type="button" data-mig-k="'+m.key+'" aria-pressed="'+on+'" style="--tone:'+m.tone+'">' +
+      '<div class="tile-head"><div class="tile-name">'+m.name+'</div>' + ring(share, m.tone) + '</div>' +
+      '<div class="tile-figs"><span class="fig num">'+fmtInt.format(cnt)+'</span><span class="fig-unit">помещений</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">'+fmtArea.format(area)+' м²</span></div></button>';
+  }).join('');
+
+  var tiles = document.querySelectorAll('[data-mig-k]');
+  for(var t=0;t<tiles.length;t++) tiles[t].addEventListener('click', function(){
+    var k = this.getAttribute('data-mig-k');
+    if(k === 'ten' || k === 'own') migTenure = (migTenure === k) ? null : k;
+    else migFlow = (migFlow === k) ? null : k;
+    renderMig();
+  });
+
+  var opts = {}, list = [];
+  all.forEach(function(r){
+    [[migFrom(r), okrugName(r)], [migTo(r), resolveOkrug(r[COL.newOkrug])]].forEach(function(pair){
+      if(!pair[0] || opts[pair[0]]) return;
+      opts[pair[0]] = 1; list.push({ id:pair[0], name:pair[1] });
+    });
+  });
+  list.sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
+  tabFilters({
+    box:'m-filters', okrugLabel:'Округ',
+    okrugs: list, okrug: migOkrug, tenure: migTenure,
+    onOkrug: function(v){ migOkrug = v; renderMig(); },
+    onTenure: function(v){ migTenure = v; renderMig(); }
+  });
+
+  restoreScroll();
+  /* Без выбранного направления, но с выбранным округом линии разделяются:
+     охра — уехали из него, синий — приехали в него. */
+  var lineColor;
+  if(migFlow === 'in') lineColor = '#1b4d8f';
+  else if(migFlow === 'stay') lineColor = '#6c4a86';
+  else if(migFlow === 'out') lineColor = '#a96a15';
+  else if(migOkrug) lineColor = function(p){
+    return norm(p.from) === migOkrug ? '#a96a15' : '#1b4d8f';
+  };
+  else lineColor = '#a96a15';
+  drawMigMap('m-map', scope, lineColor);
+}
+
+function switchTo(name){
+  tab = name;
+  document.getElementById('view-main').hidden = name !== 'main';
+  document.getElementById('view-cert').hidden = name !== 'cert';
+  document.getElementById('view-out').hidden  = name !== 'out';
+  document.getElementById('view-in').hidden   = name !== 'in';
+  document.getElementById('view-stay').hidden = name !== 'stay';
+  document.getElementById('view-mig').hidden  = name !== 'mig';
+  var btn = document.getElementById('tab-btn');
+  btn.textContent = name === 'main' ? 'Сертификаты' : 'Общий дашборд';
+  [['nav-mig','mig'],['nav-out','out'],['nav-in','in'],['nav-stay','stay']].forEach(function(pair){
+    document.getElementById(pair[0]).setAttribute('aria-pressed', name === pair[1] ? 'true' : 'false');
+  });
+  if(name === 'out') renderOut();
+  if(name === 'in') renderIn();
+  if(name === 'stay') renderStay();
+  if(name === 'mig') renderMig();
+  window.scrollTo({ top:0, behavior:'auto' });   // вкладка открывается с начала страницы
+}
+
+function switchTab(){
+  switchTo(tab === 'main' ? 'cert' : 'main');   // «Общий дашборд» всегда ведёт на первую вкладку
+}
+
+function renderTiles(){
+  var denom = state.okrug
+    ? base.filter(function(r){ return norm(okrugName(r)) === state.okrug; }).length
+    : base.length;
+
+  /* При фильтре «Сертификаты» плитка выкупов заменяется на ДКП/ДДУ. */
+  var tiles = METRICS.map(function(m){
+    return (state.deal === 'cert' && m.key === 'buy')
+      ? { key:null, name:'ДКП/ДДУ', tone:'var(--c-agr)', test:isDkp }
+      : m;
+  });
+
+  document.getElementById('row-lead').innerHTML = tiles.map(function(m){
+    var cnt = 0, area = 0;
+    for(var i=0;i<view.length;i++){
+      if(!m.test(view[i])) continue;
+      cnt++; area += num(view[i][COL.area]);
+    }
+    var share = denom ? cnt/denom : 0;
+    var head = '<div class="tile-head"><div class="tile-name">'+m.name+'</div>' + ring(share, m.tone) + '</div>' +
+      '<div class="tile-figs"><span class="fig num">'+fmtInt.format(cnt)+'</span><span class="fig-unit">помещений</span></div>' +
+      '<div class="tile-area"><span>Площадь</span><span class="num">'+fmtArea.format(area)+' м²</span></div>';
+    if(!m.key) return '<div class="tile" style="--tone:'+m.tone+'">'+head+'</div>';
+    var slot = slotOf(m.key);
+    var on = slot ? (state[slot] === m.key) : (!state.deal && !state.tenure);
+    return '<button class="tile" type="button" data-metric="'+m.key+'" aria-pressed="'+(on?'true':'false')+'" style="--tone:'+m.tone+'">' +
+      head + '</button>';
+  }).join('');
+
+  var tiles = document.querySelectorAll('[data-metric]');
+  for(var i=0;i<tiles.length;i++){
+    tiles[i].addEventListener('click', function(){
+      var k = this.getAttribute('data-metric'), slot = slotOf(k);
+      if(!slot){ state.deal = null; state.tenure = null; }
+      else state[slot] = (state[slot] === k) ? null : k;
+      render();
+    });
+  }
+}
+
+function renderPanels(){
+  /* При выбранном фильтре «Сертификаты» второй чарт показывает не выкупы,
+     которых в этой выборке нет, а ДКП/ДДУ по округам. */
+  var second = state.deal === 'cert'
+    ? panel('dkp','ДКП/ДДУ по округам','var(--c-agr)')
+    : panel('buy','Выкупы по округам','var(--c-buy)');
+  document.getElementById('row-lists').innerHTML =
+    panel('cert','Сертификаты по округам','var(--c-cert)') + second;
+
+  var btns = document.querySelectorAll('[data-sort]');
+  for(var i=0;i<btns.length;i++){
+    btns[i].addEventListener('click', function(){
+      sortMode[this.getAttribute('data-sort')] = this.getAttribute('data-mode');
+      render();
+    });
+  }
+  fillList('cert');
+  fillList(state.deal === 'cert' ? 'dkp' : 'buy');
+}
+
+function panel(key, title, tone){
+  return '<section class="panel" style="--tone:'+tone+'">' +
+    '<div class="panel-head"><div class="panel-title"><span class="swatch"></span>'+title+'</div>' +
+    '<div class="sortgroup" role="group" aria-label="Сортировка: '+title+'">' +
+    '<button class="ctrl" type="button" data-sort="'+key+'" data-mode="cnt" aria-pressed="'+(sortMode[key]==='cnt')+'">По количеству</button>' +
+    '<button class="ctrl" type="button" data-sort="'+key+'" data-mode="area" aria-pressed="'+(sortMode[key]==='area')+'">По площади</button></div>' +
+    '</div><div class="scroll" id="list-'+key+'"></div></section>';
+}
+
+function fillList(key){
+  var test = key === 'cert' ? isCert : (key === 'dkp' ? isDkp : isBuyout);
+  var agg = {}, order = [];
+  for(var i=0;i<base.length;i++){
+    var r = base[i];
+    if(!test(r)) continue;
+    if(!passFilters(r, 'okrug')) continue;
+    var raw = okrugName(r), id = norm(raw);
+    if(!agg[id]){ agg[id] = { id:id, name:raw, cnt:0, area:0 }; order.push(id); }
+    agg[id].cnt++; agg[id].area += num(r[COL.area]);
+  }
+  var list = order.map(function(id){ return agg[id]; });
+  var mode = sortMode[key];
+  list.sort(function(a,b){ return (b[mode] - a[mode]) || a.name.localeCompare(b.name,'ru'); });
+
+  var max = list.length ? list[0][mode] : 1;
+  document.getElementById('list-'+key).innerHTML = list.length
+    ? list.map(function(o,i){
+        var w = max > 0 ? Math.max(2, Math.round(o[mode]/max*100)) : 0;
+        var on = state.okrug === o.id;
+        return '<button class="item" type="button" data-okrug="'+esc(o.id)+'" aria-pressed="'+(on?'true':'false')+'">' +
+          '<span class="item-rank num">'+(i+1)+'</span>' +
+          '<span class="item-name" title="'+esc(o.name)+'">'+esc(o.name)+'</span>' +
+          '<span class="bar"><i style="width:'+w+'%"></i></span>' +
+          '<span class="item-cnt num">'+fmtInt.format(o.cnt)+'</span>' +
+          '<span class="item-area num">'+fmtArea.format(o.area)+' м²</span></button>';
+      }).join('')
+    : '<div class="empty">Нет строк по текущему фильтру.</div>';
+
+  var items = document.querySelectorAll('#list-'+key+' [data-okrug]');
+  for(var j=0;j<items.length;j++){
+    items[j].addEventListener('click', function(){
+      var id = this.getAttribute('data-okrug');
+      state.okrug = (state.okrug === id) ? null : id;
+      render();
+    });
+  }
+}
+
+function renderFilters(){
+  var names = {}, opts = [];
+  for(var i=0;i<base.length;i++){
+    var raw = okrugName(base[i]), id = norm(raw);
+    if(!names[id]){ names[id] = raw; opts.push({ id:id, name:raw }); }
+  }
+  opts.sort(function(a,b){ return a.name.localeCompare(b.name,'ru'); });
+
+  var oOpts = '<option value="">Все округа</option>' + opts
+    .map(function(o){ return '<option value="'+esc(o.id)+'"'+(state.okrug===o.id?' selected':'')+'>'+esc(o.name)+'</option>'; }).join('');
+  var dOpts = '<option value="">Все</option>' +
+    '<option value="cert"'+(state.deal==='cert'?' selected':'')+'>Сертификаты</option>' +
+    '<option value="buy"'+(state.deal==='buy'?' selected':'')+'>Выкупы</option>';
+  var tOpts = '<option value="">Все</option>' +
+    '<option value="own"'+(state.tenure==='own'?' selected':'')+'>Собственники</option>' +
+    '<option value="ten"'+(state.tenure==='ten'?' selected':'')+'>Наниматели</option>';
+
+  document.getElementById('filters').innerHTML =
+    '<label>Округ <select id="f-okrug">'+oOpts+'</select></label>' +
+    '<label>Тип соглашения <select id="f-deal">'+dOpts+'</select></label>' +
+    '<label>Тип собственности <select id="f-tenure">'+tOpts+'</select></label>';
+
+  document.getElementById('f-okrug').addEventListener('change', function(){
+    state.okrug = this.value || null; render();
+  });
+  document.getElementById('f-deal').addEventListener('change', function(){
+    state.deal = this.value || null; render();
+  });
+  document.getElementById('f-tenure').addEventListener('change', function(){
+    state.tenure = this.value || null; render();
+  });
+}
+
+document.getElementById('reset').addEventListener('click', function(){
+  state.deal = null; state.tenure = null; state.okrug = null;
+  certTenure = null; certOkrug = null; certDkp = false;
+  outOkrug = null; outTo = null; outTenure = null;
+  inOkrug = null; inFrom = null; inTenure = null;
+  stayOkrug = null; stayTenure = null;
+  migOkrug = null; migFlow = null; migTenure = null;
+  addrSel = { out:null, 'in':null, stay:null };
+  query = { out:'', 'in':'', stay:'' };
+  panoSel = { out:'', 'in':'', stay:'' };
+  certSort = 'cnt'; dkpSort = 'cnt';
+  sortMode = { cert:'cnt', buy:'cnt', dkp:'cnt' };
+  if(base.length) render();
+});
+
+document.getElementById('reload').addEventListener('click', function(){ load(); });
+document.getElementById('tab-btn').addEventListener('click', switchTab);
+[['nav-mig','mig'],['nav-out','out'],['nav-in','in'],['nav-stay','stay']].forEach(function(pair){
+  document.getElementById(pair[0]).addEventListener('click', function(){
+    switchTo(tab === pair[1] ? 'cert' : pair[1]);
+  });
+});
+
+/* Enter при выбранном адресе — открыть панораму по адресу приобретения. */
+document.addEventListener('keydown', function(e){
+  if(e.key !== 'Enter' || !addrSel[tab] || !panoSel[tab]) return;
+  var t = e.target, n = t && t.tagName ? t.tagName.toLowerCase() : '';
+  if(n === 'input' || n === 'select' || n === 'textarea' || (t && t.getAttribute && t.getAttribute('data-addr'))) return;
+  window.open(panoSel[tab], '_blank', 'noopener');
+});
+
+/* Кнопка «наверх». */
+var toTop = document.getElementById('to-top');
+window.addEventListener('scroll', function(){
+  toTop.hidden = window.scrollY < 300;
+});
+toTop.addEventListener('click', function(){
+  window.scrollTo({ top:0, behavior:'smooth' });
+});
+
+load();
+})();
+</script>
+</body>
+</html>
